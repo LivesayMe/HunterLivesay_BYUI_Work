@@ -29,23 +29,27 @@ def getByte(i):
         b[7] = 1
     return b
  
+def primesfrom3to(n):
+    """ Returns a array of primes, 3 <= p < n """
+    sieve = numpy.ones(n//2, dtype=numpy.bool)
+    for i in range(3,int(n**0.5)+1,2):
+        if sieve[i//2]:
+            sieve[i*i//2::i] = False
+    return 2*numpy.nonzero(sieve)[0][1::]+1
+
 #First bit indicates polarity of first set, every reminaing number indicates length of next substr
+#0000011111011101
 def encodeRLE(msg):
-    output = [int(msg[0])]
-    curBit = msg[0]
-    nextInd = msg.find("1" if curBit == "0" else "0")
-    index = 0
- 
-    while (nextInd != -1):
-        output.append(len(msg[0:nextInd]))
-        msg = msg[nextInd:]
-        curBit = "1" if curBit == "0" else "0"
-        nextInd = msg.find("1" if curBit == "0" else "0")
-        if len(msg) >1:
-            if msg[1] != curBit:
-                nextInd = 1
-    output.append(len(msg) - index)
-    return output
+  output = [int(msg[0])]
+  curBit = msg[0]
+  
+  lastIndex = 0
+  for i in range(len(msg)):
+    if msg[i] != curBit:
+      curBit = "1" if curBit == "0" else "0"
+      output.append(i-lastIndex)
+      lastIndex = i
+  return output
  
 def decodeRLE(nums):
     msg = ""
@@ -56,12 +60,28 @@ def decodeRLE(nums):
     return msg
  
 def getCompressedPrimes(n):
-    compressed = list()
-    for i in range(n//30):
-        compressed.append(''.join([str(x) for x in getByte(i)]))
-    msg = ''.join(compressed)
-    
-    return msg
+    compressed = ""
+    k = 0
+    i = 0
+    constants = [-13,-11,-7,-1,1,7,11,13]
+    for prime in primesfrom3to(n)[2:]:
+        while True:
+            if 30*k+constants[i] == prime:
+                compressed += '1'
+                i += 1
+                if i == 8:
+                    i = 0
+                    k += 1
+                break
+            else:
+                compressed += '0'
+                i += 1
+                if i == 8:
+                    i = 0
+                    k += 1
+        
+    return compressed
+
  
 def decompress(x):
     #Chop the string into bytes
@@ -69,7 +89,7 @@ def decompress(x):
     b = [x[i:i+chunk_size] for i in range(0, chunks, chunk_size) ]
  
     primes = list()
-    constants = [1,-1,3,-3,7,-7,11,-11]
+    constants = [-11,-7,-3,-1,1,3,7,11]
     for i in range(len(b)):
         for q in range(len(b[i])):#The current bitstring to decode
             if b[i][q] == "1":
@@ -164,7 +184,8 @@ def create_table(elements, print_tree=False):
   return data
  
 #First do 30k compression
-m = getCompressedPrimes(50000000)
+n = 179424673
+m = getCompressedPrimes(n)
 print(len(m))
 #Then RLE encode
 m = encodeRLE(m)
@@ -172,13 +193,3 @@ print(len(m))
 #Then huffman encode
 table = create_table([[x] for x in m], False)
 pprint(show_results_table(m, table))
-#The huffman decode
- 
-#compressed = ''.join([str(x) for x in m])
-#print(len(compressed))
- 
-#Then RLE decpde
-m = decodeRLE(m)
-#Then 30k decompress
-m = decompress(m)
-print(len(m))
