@@ -1,0 +1,85 @@
+import random
+import graphviz
+
+#Generate the random tree
+dot = graphviz.Graph(comment='Random Graph')
+vertices = list()
+edges = list()
+for i in range(random.randrange(26)):
+    vertices.append(chr(i+97))
+    dot.node(chr(i+97))
+
+for i in vertices:
+    for q in random.choices(vertices, k=random.randrange(len(vertices)//2-1)):
+        if q != i:
+            if not [i,q] in edges and not [q,i] in edges: #Remove this if the graph is directed
+                edges.append([i,q])
+                dot.edges([i+q])
+
+dot.render('test-output/graph.gv', view=True)  # Print out the randomly generated graph
+
+
+#Generate the spanning tree using prim's algorithm
+tree = graphviz.Graph(comment="Spanning Tree")
+unvisited = vertices
+
+treeNodes = list()
+treeEdges = list()
+
+cur = unvisited[0]
+
+treeNodes.append(cur)
+unvisited.remove(cur)
+
+tree.node(cur)
+
+while True:
+    visited = False
+    for i in edges:
+        if i[0] == cur or i[1] == cur:
+            if i[0] in unvisited or i[1] in unvisited:
+                
+                visited = True
+                if i[0] == cur:
+                    treeEdges.append([cur,i[1]])
+                    tree.edges([cur+i[1]])
+                    unvisited.remove(i[1])
+                    cur = i[1]
+                else:
+                    treeEdges.append([cur,i[0]])
+                    tree.edges([cur+i[0]])
+                    unvisited.remove(i[0])
+                    cur = i[0]
+                tree.node(cur)
+                treeNodes.append(cur)
+                break
+    if not visited:#We didn't find any node so backtrack until we find a node that has an unexplored neighbor
+        canBacktrack = False
+        for i in reversed(treeNodes):
+            for q in edges:
+                if q[0] == i or q[1] == i:#Does the edge contain our current point
+                    if q[0] in unvisited:
+                        cur = q[0]
+                        treeEdges.append([q[1], cur])
+                        tree.edges([q[1]+cur])
+                        treeNodes.append(cur)
+                        unvisited.remove(cur)
+                        tree.node(cur)
+                        canBacktrack = True
+                        break
+                    elif q[1] in unvisited:
+                        cur = q[1]
+                        treeEdges.append([q[0], cur])
+                        tree.edges([q[0]+cur])
+                        treeNodes.append(cur)
+                        unvisited.remove(cur)
+                        tree.node(cur)
+                        canBacktrack = True
+                        break
+        if not canBacktrack:#There is a disconnected subgraph
+            break
+        if len(unvisited) == 1 or len(unvisited) == 0:#We have finished exploring the tree
+            break
+
+
+tree.render('test-output/spanning.gv', view=True)  # Print out the final spanning tree
