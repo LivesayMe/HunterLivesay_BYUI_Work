@@ -1,0 +1,20 @@
+import random 
+
+def populateList(quantities):
+    l = list()
+    if len(quantities) == 1:
+        for i in range(quantities[0]):
+            l.append([i])
+        return l
+    for i in range(quantities[0]):
+        for q in populateList(quantities[1:]):
+            l.append([i] + q)
+    return l
+
+allPeople = populateList([18252,2,2,2,2,2,2])
+idahoans = list()
+for i in range(1781000):
+    if len(allPeople) == 0:
+        print("Duplicate people")
+        break
+    idahoans.append(allPeople.pop(random.randrange(len(allPeople))))
