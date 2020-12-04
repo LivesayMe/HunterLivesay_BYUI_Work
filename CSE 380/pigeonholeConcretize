@@ -1,0 +1,18 @@
+#n is the number of potential characters that can appear in a person's initials
+def calculate_number_of_possible_initials_including_middle_initial_if_any(n):
+    return n*(n+1)*n
+
+def pigeonhole_from_pigeon(pigeon_represented_as_a_person_with_traits):
+    #Convert the dictionary to a value
+    attrs = []
+    for i in ["LDS", "Likes Cats", "Born Before", "Wears Contacts", "Bites Fingernails", "Lives Close"]:
+        attrs.append(1 if pigeon_represented_as_a_person_with_traits[i] else 0)
+    s = ' '.join([x[0] for x in pigeon_represented_as_a_person_with_traits["Name"].split(' ')]) +":"+ ''.join([str(x) for x in attrs])
+    #Do the asserts the assignment asks for
+    assert(len(s)==10)
+    assert(calculate_number_of_possible_initials_including_middle_initial_if_any(26)*2**6 > 1000000)
+    #Return the value the assignment asks for
+    return s
+
+print(pigeonhole_from_pigeon(
+    {"Name": "John Doe", "LDS": True, "Likes Cats":True, "Born Before": True, "Wears Contacts": False, "Bites Fingernails": False, "Lives Close": True} ))
