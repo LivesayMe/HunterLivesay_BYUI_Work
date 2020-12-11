@@ -1,0 +1,166 @@
+# LAP
+# LATEP
+# LEATEP
+# LEAP
+
+# CATERPILLAR 
+# CARPET
+
+from english_words import english_words_alpha_set
+import random
+import string
+
+rules = {"EAT": "AT", "ATE": "A", "LATER":"LOW","PAN":"PILLOW", "CARP":"ME", "A":"EA"}
+newRules = {}
+for i in rules:
+    newRules[rules[i]] = i
+rules.update(newRules)
+
+
+
+
+def findPath(start, end, rules, path, depth):
+    if depth < 10:
+        if abs(len(start)-len(end)) > 15:#This is effectively pruning branches that get to far away from where the end should be
+            return False
+
+        if start == end:
+            #print(path + [end])
+            return True
+        
+
+        for i in rules:
+            if i in start:
+                if findPath(start.replace(i, rules[i]), end, rules, path + [start], depth+1):
+                    return True
+    return False
+
+def findPathAndRules(start, end, rules, path, rulePath, depth):
+    if depth < 10:
+        if abs(len(start)-len(end)) > 15:#This is effectively pruning branches that get to far away from where the end should be
+            return False
+
+        if start == end:
+            print(path + [end])
+            print(rulePath)
+            return True
+        
+
+        for i in rules:
+            if i in start:
+                if findPathAndRules(start.replace(i, rules[i]), end, rules, path + [start], rulePath + [[i, rules[i]]], depth+1):
+                    return True
+    return False
+
+def testRules(rules, sampleSize):
+    startList = [x.upper() for x in random.sample(english_words_alpha_set, sampleSize)]
+    sum = 0
+    for i in startList:
+        sum += makePaths(i, i, rules, 0)
+    return sum
+
+def makePaths(start, cur, rules, depth):
+    if cur.upper() in english_words_alpha_set and start != cur:
+        return 1
+
+    if depth == 7:
+        return 0
+    
+    sum = 0
+    for i in rules:
+        if i in cur:
+            sum += makePaths(start, cur.replace(i, rules[i]), rules, depth+1)
+    return sum
+
+    
+def makeRules(maxRuleLength, numRules):
+    rules = {}
+    while len(rules) < numRules:
+        start = ''.join(random.choices(string.ascii_uppercase, k=random.randrange(1,maxRuleLength)))
+        end = ''.join(random.choices(string.ascii_uppercase, k=random.randrange(1,maxRuleLength)))
+        if start not in rules:
+            rules[start] = end
+    
+    newRules = {}
+    for i in rules:
+        newRules[rules[i]] = i
+    rules.update(newRules)
+    return rules
+
+def getBestRules(popSize, mutationRate, epochs, maxRuleLength, numRules, elitism = True):
+    population = [makeRules(maxRuleLength,numRules) for _ in range(popSize)]
+    bestEverRules = {}
+    bestEverValue = 0
+    for i in range(epochs):
+        newPopulation = list()
+        bestVal = 0
+        bestRules = {}
+        for q in range(popSize//2): # Remove weaker half
+            val1 = testRules(population[q], 100)
+            val2 = testRules(population[popSize-q-1], 100)
+
+            if val1 > bestVal:#For reporting the fitness of the epoch
+                bestVal = val1
+                bestRules = population[q]
+            elif val2 > bestVal:
+                bestVal = val2
+                bestRules = population[popSize-q-1]
+            
+            if bestVal > bestEverValue:
+                bestEverRules = bestRules
+                bestEverValue = bestVal
+
+            if val1 > val2:
+                if len(population[q]) > 5:
+                    newPopulation.append(population[q])
+            else:
+                if len(population[popSize-q-1]) > 5:
+                    newPopulation.append(population[popSize-q-1])
+        
+        while(len(newPopulation) < popSize): # Crossbreed stronger half
+            newPop = {}
+            selection = random.choices(newPopulation, k=2)
+            pop1 = selection[0]
+            pop2 = selection[1]
+            pop1Genes = sorted(pop1)
+            pop2Genes = sorted(pop2)
+            if len(pop1) > 5 and len(pop2) > 5: # For whatever reason the length of the genes fluctuates from generation to generation, this is to preven them from replicating
+                for k in range(numRules):
+                    if random.uniform(0,1) < mutationRate: # Make new rule
+                        newPop[''.join(random.choices(string.ascii_uppercase, k=random.randrange(1,maxRuleLength)))] = ''.join(random.choices(string.ascii_uppercase, k=random.randrange(1,maxRuleLength)))
+                    else:
+                        if random.uniform(0,1) < .5:
+                            newPop[pop1Genes[k]] = pop1[pop1Genes[k]] #Get gene from pop1
+                        else:
+                            newPop[pop2Genes[k]] = pop2[pop2Genes[k]] # Get gene from pop2
+
+                #Flip each of the values in the dictionary
+                newRules = {}
+                for l in newPop:
+                    newRules[newPop[l]] = l
+                newPop.update(newRules)
+
+                newPopulation.append(newPop)
+        
+        if elitism:
+            newPopulation.append(bestRules)
+
+        population = newPopulation
+        print("Epoch: %d BestVal: %s PopSize: %s"% (i, bestVal, len(newPopulation)))
+        newPopulation = list()
+    print("Rule set %s found %s paths"% (bestEverRules, bestEverValue))
+    return bestEverRules
+        
+        
+
+
+print(getBestRules(100,.05,100,2,5))
+
+# best = -1
+# for i in range(1000):
+#     rules = makeRules(2,5)
+#     value = testRules(rules, 10)
+#     if value > best:
+#         print("New best ruleset has %s paths. Rules:%s"% (value, rules))
+#         best = value
+# findPathAndRules(startWord, endWord, rules, [], [], 0)
