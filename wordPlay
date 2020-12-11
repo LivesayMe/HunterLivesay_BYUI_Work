@@ -1,0 +1,101 @@
+# LAP
+# LATEP
+# LEATEP
+# LEAP
+
+# CATERPILLAR 
+# CARPET
+
+from english_words import english_words_alpha_set
+import random
+import string
+
+rules = {"EAT": "AT", "ATE": "A", "LATER":"LOW","PAN":"PILLOW", "CARP":"ME", "A":"EA"}
+newRules = {}
+for i in rules:
+    newRules[rules[i]] = i
+rules.update(newRules)
+
+
+
+
+def findPath(start, end, rules, path, depth):
+    if depth < 10:
+        if abs(len(start)-len(end)) > 15:#This is effectively pruning branches that get to far away from where the end should be
+            return False
+
+        if start == end:
+            #print(path + [end])
+            return True
+        
+
+        for i in rules:
+            if i in start:
+                if findPath(start.replace(i, rules[i]), end, rules, path + [start], depth+1):
+                    return True
+    return False
+
+def findPathAndRules(start, end, rules, path, rulePath, depth):
+    if depth < 10:
+        if abs(len(start)-len(end)) > 15:#This is effectively pruning branches that get to far away from where the end should be
+            return False
+
+        if start == end:
+            print(path + [end])
+            print(rulePath)
+            return True
+        
+
+        for i in rules:
+            if i in start:
+                if findPathAndRules(start.replace(i, rules[i]), end, rules, path + [start], rulePath + [[i, rules[i]]], depth+1):
+                    return True
+    return False
+
+def testRules(rules, sampleSize):
+    startList = [x.upper() for x in random.sample(english_words_alpha_set, sampleSize)]
+    sum = 0
+    for i in startList:
+        sum += makePaths(i, i, rules, 0)
+    return sum
+
+def makePaths(start, cur, rules, depth):
+    if cur.upper() in english_words_alpha_set and start != cur:
+        return 1
+
+    if depth == 9:
+        return 0
+    
+    sum = 0
+    for i in rules:
+        if i in cur:
+            sum += makePaths(start, cur.replace(i, rules[i]), rules, depth+1)
+    return sum
+
+    
+def makeRules(maxRuleLength, numRules):
+    rules = {}
+    startList = [''.join(random.choices(string.ascii_uppercase, k=random.randrange(1,maxRuleLength))) for _ in range(numRules*2)]
+    endList = startList[numRules:]
+    startList = startList[:numRules]
+    for i in range(len(startList)):
+        rules[startList[i]] = endList[i]
+    newRules = {}
+    for i in rules:
+        newRules[rules[i]] = i
+    rules.update(newRules)
+    return rules
+startWord = "CATERPILLAR"
+endWord = "MAN"
+
+
+#print(testRules(rules, 5))
+
+best = -1
+for i in range(1000):
+    rules = makeRules(4,5)
+    value = testRules(rules, 10)
+    if value > best:
+        print("New best ruleset has %s paths. Rules:%s"% (value, rules))
+        best = value
+findPathAndRules(startWord, endWord, rules, [], [], 0)
